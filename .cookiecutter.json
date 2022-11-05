@@ -1,0 +1,14 @@
+{
+  "_output_dir": "/home/wburn/dev",
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "Jason Washburn",
+  "copyright_year": "2022",
+  "development_status": "Development Status :: 1 - Planning",
+  "email": "jasonwashburn@gmail.com",
+  "friendly_name": "OpenWx",
+  "github_user": "jasonwashburn",
+  "license": "MIT",
+  "package_name": "openwx",
+  "project_name": "openwx",
+  "version": "0.0.0"
+}
