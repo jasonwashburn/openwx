@@ -25,7 +25,7 @@ class Parameter:
     key: str
 
 
-desired_locations = [Location(name="Home", latitude=41.09, longitude=-95.94)]
+desired_locations = [Location(name="Home", latitude=41.09, longitude=180 - 95.94)]
 
 desired_params = [
     Parameter(name="temperature", key="tmp2m"),
@@ -56,12 +56,8 @@ def get_parameter_value(
 
     value = (
         ds[parameter.key]
-        .sel(
-            lat=location.latitude,
-            lon=location.longitude,
-            time=valid_time,
-            method="nearest",
-        )
+        .sel(time=valid_time)
+        .interp(lat=location.latitude, lon=location.longitude, method=method)
         .data
     )
 
@@ -71,7 +67,7 @@ def get_parameter_value(
 def main() -> None:
     """Main function used for testing."""
     for location in desired_locations:
-        time = dt.datetime.utcnow()
+        time = dt.datetime(2022, 11, 5, 12)
         print(f"{location.name}: {time.isoformat()}")
         for parameter in desired_params:
             print(
