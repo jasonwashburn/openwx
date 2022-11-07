@@ -2,6 +2,7 @@
 from dataclasses import asdict
 from datetime import datetime
 
+import uvicorn
 from fastapi import Depends, FastAPI, Query
 
 from openwx import gfs
@@ -81,3 +82,7 @@ async def param(
     )
 
     return response
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", port=8000, log_level="info", reload=True)
