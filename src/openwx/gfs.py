@@ -41,7 +41,7 @@ def get_model_key(parameter: str) -> Optional[str]:
         parameter (ParameterName): The requested parameter.
 
     Returns:
-        Optional[str]: The model key for the requested parameter if the parameter exists, otherwise None
+        Optional[str]: The model key of the requested parameter, otherwise None
     """
     parameter_enum = ParameterName(parameter)
     parameter_metadata = PARAMETERS.get(parameter_enum)
@@ -94,7 +94,10 @@ def get_parameter_value(
     """
     model_date = model_run.strftime("%Y%m%d")
     model_hour = model_run.strftime("%H")
-    gfs_link = f"http://nomads.ncep.noaa.gov:80/dods/gfs_0p25_1hr/gfs{model_date}/gfs_0p25_1hr_{model_hour}z"
+    base_url = "http://nomads.ncep.noaa.gov:80"
+    gfs_link = (
+        f"{base_url}/dods/gfs_0p25_1hr/gfs{model_date}/gfs_0p25_1hr_{model_hour}z"
+    )
     ds = xr.open_dataset(gfs_link, use_cftime=True)
 
     param_key = get_model_key(parameter=parameter)

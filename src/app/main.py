@@ -39,7 +39,7 @@ async def parameter_info() -> list[dict[str, str]]:
 
 
 @app.get("/queryParameters", response_model=ForecastResponseModel)
-async def param(
+async def query_parameters(
     model_run: datetime,
     valid_time_start: datetime,
     valid_time_end: datetime,
@@ -52,8 +52,8 @@ async def param(
         model_run (datetime): A datetime object for the requested model run.
         valid_time_start (datetime): The starting valid time for the request.
         valid_time_end (datetime): The ending valid time for the request.
-        coords (Coords, optional): The coordinates for the request. Defaults to Depends().
-        parameters (list[str], optional): The requested parameters. Defaults to Query(enum=[item for item in ParameterName]).
+        coords (Coords, optional): The coordinates for the request.
+        parameters (list[str], optional): The requested parameters.
 
     Returns:
         ForecastResponseModel: The response model for the selected parameter data.
