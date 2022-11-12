@@ -9,6 +9,8 @@ COPY environment.yml* .devcontainer/noop.txt /tmp/conda-tmp/
 RUN if [ -f "/tmp/conda-tmp/environment.yml" ]; then umask 0002 && /opt/conda/bin/conda env update -n base -f /tmp/conda-tmp/environment.yml; fi \
     && rm -rf /tmp/conda-tmp
 
+RUN conda install -y -c conda-forge xarray cfgrib dask netCDF4 bottleneck scipy
+
 # [Optional] Uncomment to install a different version of Python than the default
 # RUN conda install -y python=3.6 \
 #     && pip install --no-cache-dir pipx \
@@ -17,5 +19,7 @@ RUN if [ -f "/tmp/conda-tmp/environment.yml" ]; then umask 0002 && /opt/conda/bi
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt
+COPY requirements.txt requirements-dev.txt /tmp/
+RUN conda init \
+    && pip install -r /tmp/requirements.txt \
+    && pip install -r /tmp/requirements-dev.txt
