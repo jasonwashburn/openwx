@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from datetime import datetime
+from typing import Optional
 
 import aiohttp
 
@@ -37,9 +38,39 @@ async def get_grib_index(run: datetime, forecast: int) -> str:
     return resp_text
 
 
+def parse_grib_index(index: str) -> dict[str, dict[str, dict[str, Optional[int]]]]:
+    """Parses a grib index file into a usable dictionary.
+
+    Args:
+        index (str): The contents of the grib index file.
+
+    Returns:
+        dict[str, dict[str, dict[str, Optional[int]]]]: A dictionary containing parameter, level,
+            and start/stop byte addresses.
+    """
+    result = {}
+    prev_start = None
+    for line in index.split("\n")[::-1]:
+        if len(line) != 0:
+            _, start, _, parameter, level, _ = line.rstrip(":").split(":")
+            stop = prev_start - 1 if prev_start is not None else None
+            byte_locations = {"start": int(start), "stop": stop}
+            if parameter in result.keys():
+                result[parameter][level] = byte_locations
+            else:
+                result[parameter] = {level: byte_locations}
+
+            prev_start = int(start)
+    return result
+
+
 async def main():
     """Main function used for easier testing in development."""
-    print(await get_grib_index(run=datetime(2022, 11, 12, 0), forecast=1))
+    print(
+        parse_grib_index(
+            await get_grib_index(run=datetime(2022, 11, 12, 0), forecast=1)
+        )
+    )
 
 
 if __name__ == "__main__":
