@@ -1,4 +1,4 @@
 [flake8]
-extend-ignore = E501
+extend-ignore = E501,S101
 max-complexity = 10
 docstring-convention = google
