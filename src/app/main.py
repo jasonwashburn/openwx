@@ -1,12 +1,10 @@
 """Main module for FastAPI app."""
-from dataclasses import asdict
 from datetime import datetime
 
 import uvicorn
 from fastapi import Depends, FastAPI, Query
 
-from openwx import gfs
-from openwx.gfs import ParameterName, get_hours_from_range, get_parameter_value
+from openwx.gfs import GFSParameters, get_hours_from_range, get_parameter_value
 from openwx.models import Coords, Forecast, ForecastResponseModel
 
 app = FastAPI()
@@ -30,9 +28,9 @@ async def parameter_info() -> list[dict[str, str]]:
         list[dict[str, str]]: A list of available parameters and their associated metadata.
     """
     response = []
-    for param, metadata in gfs.PARAMETERS.items():
+    for parameter in GFSParameters.parameters():
         response.append(
-            {"parameter": param.value, "parameter_metadata": asdict(metadata)}
+            {"parameter": parameter.short_name, "unit": parameter.model_unit}
         )
 
     return response
@@ -44,7 +42,7 @@ async def query_parameters(
     valid_time_start: datetime,
     valid_time_end: datetime,
     coords: Coords = Depends(),
-    parameters: list[str] = Query(enum=[item for item in ParameterName]),
+    parameters: list[str] = Query(enum=list(GFSParameters.parameter_names())),
 ) -> ForecastResponseModel:
     """Provides endpoint to allow users to query model parameter data.
 

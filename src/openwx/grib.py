@@ -6,7 +6,11 @@ from tempfile import NamedTemporaryFile
 from typing import Optional
 
 import aiohttp
+import numpy as np
 import xarray as xr
+from xarray.core.types import InterpOptions
+
+from openwx.models import Coords
 
 BASE_URL = "https://noaa-gfs-bdp-pds.s3.amazonaws.com"
 URL_PATTERN = "/gfs.{run_date}/{run_hour:02d}/atmos/gfs.t{run_hour:02d}z.pgrb2.0p25.f{forecast:03d}"
@@ -159,12 +163,65 @@ async def get_grib_message(
                 return grib_message
 
 
+def get_dataset_from_grib_message(grib_message: bytes) -> xr.Dataset:
+    """Returns an xarray dataset from the provided grib message.
+
+    Args:
+        grib_message (bytes): A valid GRIB message.
+
+    Returns:
+        xr.Dataset: An xarray dataset.
+    """
+    with NamedTemporaryFile(mode="wb") as file:
+        file.write(grib_message)
+        return xr.open_dataset(file.name, engine="cfgrib")
+
+
+async def get_parameter_value(
+    run: datetime,
+    forecast: int,
+    parameter: str,
+    level: str,
+    coords: Coords,
+    interp_method: InterpOptions = "linear",
+) -> Optional[np.ndarray]:
+    """Returns the value of a specific weather parameter at a provided location and time.
+
+    Args:
+        parameter (Parameter): The requested weather parameter.
+        coords (Coords): The requested location.
+        valid_time (datetime): The requested time.
+        method (InterpOptions, optional): Method to use for Interpolation. Defaults to "linear".
+
+    Returns:
+        ArrayLike: The value of the requested weather parameter
+    """
+    grib_message = await get_grib_message(
+        run=run, forecast=forecast, parameter=parameter, level=level
+    )
+    if grib_message is not None:
+        with NamedTemporaryFile(mode="wb") as file:
+            file.write(grib_message)
+            ds = xr.open_dataset(file.name, engine="cfgrib")
+            value = (
+                ds["t2m"]  # TODO - Need to add translation from parameter to key
+                .interp(
+                    latitude=coords.latitude,
+                    longitude=coords.longitude,
+                    method=interp_method,
+                )
+                .data
+            )
+
+            return value
+
+
 async def main():
     """Main function used for easier testing in development."""
-    run = datetime(2022, 11, 12, 0)
-    forecast = 1
-    parameter = "TMP"
-    level = "2 m above ground"
+    # run = datetime(2022, 11, 12, 0)
+    # forecast = 1
+    # parameter = "TMP"
+    # level = "2 m above ground"
 
     # parsed_index = parse_grib_index(
     # await get_grib_index(run=run, forecast=forecast)
@@ -178,15 +235,6 @@ async def main():
     # run=run, forecast=forecast, parameter=parameter, level=level
     # )
     # print(start_stop)
-
-    grib_message = await get_grib_message(
-        run=run, forecast=forecast, parameter=parameter, level=level
-    )
-    if grib_message is not None:
-        with NamedTemporaryFile(mode="wb") as file:
-            file.write(grib_message)
-            ds = xr.open_dataset(file.name, engine="cfgrib")
-            print(ds.t2m.data)
 
 
 if __name__ == "__main__":
