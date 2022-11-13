@@ -2,12 +2,14 @@
 import asyncio
 import logging
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 from typing import Optional
 
 import aiohttp
+import xarray as xr
 
 BASE_URL = "https://noaa-gfs-bdp-pds.s3.amazonaws.com"
-URL_PATTERN = "/gfs.{run_date}/{run_hour:02d}/atmos/gfs.t{run_hour:02d}z.pgrb2b.0p25.f{forecast:03d}"
+URL_PATTERN = "/gfs.{run_date}/{run_hour:02d}/atmos/gfs.t{run_hour:02d}z.pgrb2.0p25.f{forecast:03d}"
 
 
 def get_grib_url(run: datetime, forecast: int) -> str:
@@ -57,6 +59,22 @@ async def get_grib_index(run: datetime, forecast: int) -> str:
     return resp_text
 
 
+def get_param_levels_from_index(index: str) -> dict[str, list[str]]:
+    """Returns a dictionary of parameters and their available levels from idx data.
+
+    Args:
+        index (str): A string containing GRIB .idx data.
+
+    Returns:
+        dict[str, list[str]]: Dictionary containing parameters with available levels.
+    """
+    parsed_index = parse_grib_index(index)
+    result = {}
+    for parameter, level_dicts in parsed_index.items():
+        result[parameter] = [level_dict for level_dict in level_dicts]
+    return result
+
+
 def parse_grib_index(index: str) -> dict[str, dict[str, dict[str, Optional[int]]]]:
     """Parses a grib index file into a usable dictionary.
 
@@ -85,7 +103,7 @@ def parse_grib_index(index: str) -> dict[str, dict[str, dict[str, Optional[int]]
 
 async def get_start_stop_byte_nums(
     run: datetime, forecast: int, parameter: str, level: str
-) -> Optional[tuple[Optional[int], Optional[int]]]:
+) -> tuple[Optional[int], Optional[int]]:
     """Gets the start and stop byte numbers for a given parameter and level.
 
     Args:
@@ -108,29 +126,67 @@ async def get_start_stop_byte_nums(
             return start_byte, stop_byte
         else:
             logging.warning("Level: %s is not in grib index.", level)
-            return None
+            return (None, None)
     else:
         logging.warning("Param: %s is not in grib index.", parameter)
-        return None
+        return (None, None)
 
 
-async def get_grib_message(run: datetime, forecast: int, parameter: str, level: str):
-    """TODO Fill me in when complete."""
-    # url = get_grib_url(run=run, forecast=forecast)
-    # index = get_grib_index(run=run, forecast=forecast)
-    # TODO Finish me.
+async def get_grib_message(
+    run: datetime, forecast: int, parameter: str, level: str
+) -> Optional[bytes]:
+    """Returns a raw GRIB message for the specified run, forecsst, parameter, and level.
+
+    Args:
+        run (datetime): Datetime of the model run.
+        forecast (int): The forecast hour.
+        parameter (str): The requested parameter.
+        level (str): The requested level.
+
+    Returns:
+        Optional[bytes]: A raw GRIB message.
+    """
+    url = get_grib_url(run=run, forecast=forecast)
+    bytes_start, bytes_stop = await get_start_stop_byte_nums(
+        run=run, forecast=forecast, parameter=parameter, level=level
+    )
+    headers = {"Range": f"bytes={bytes_start}-{bytes_stop}"}
+    if bytes_start is not None:
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(url=url) as response:
+                grib_message = await response.read()
+                assert grib_message[:4] == b"GRIB"
+                return grib_message
 
 
 async def main():
     """Main function used for easier testing in development."""
-    parsed_index = parse_grib_index(
-        await get_grib_index(run=datetime(2022, 11, 12, 0), forecast=1)
+    run = datetime(2022, 11, 12, 0)
+    forecast = 1
+    parameter = "TMP"
+    level = "2 m above ground"
+
+    # parsed_index = parse_grib_index(
+    # await get_grib_index(run=run, forecast=forecast)
+    # )
+    # print(parsed_index)
+    # params = get_param_levels_from_index(
+    # await get_grib_index(run=run, forecast=forecast)
+    # )
+    # print(params.get(parameter))
+    # start_stop = await get_start_stop_byte_nums(
+    # run=run, forecast=forecast, parameter=parameter, level=level
+    # )
+    # print(start_stop)
+
+    grib_message = await get_grib_message(
+        run=run, forecast=forecast, parameter=parameter, level=level
     )
-    print(parsed_index)
-    start_stop = await get_start_stop_byte_nums(
-        run=datetime(2022, 11, 12, 0), forecast=1, parameter="DZDT", level="525 mb"
-    )
-    print(start_stop)
+    if grib_message is not None:
+        with NamedTemporaryFile(mode="wb") as file:
+            file.write(grib_message)
+            ds = xr.open_dataset(file.name, engine="cfgrib")
+            print(ds.t2m.data)
 
 
 if __name__ == "__main__":

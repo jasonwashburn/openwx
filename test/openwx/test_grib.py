@@ -57,20 +57,20 @@ async def test_get_grib_index(mocked_get: AsyncMock) -> None:
     actual = await get_grib_index(run=datetime(2022, 11, 12, 0), forecast=1)
     assert actual == mocked_return
     mocked_get.assert_called_with(
-        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2b.0p25.f001.idx"
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2.0p25.f001.idx"
     )
 
 
 def test_get_grib_url() -> None:
     """Tests get_grib_url returns a correctly formatted URL."""
-    expected = "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2b.0p25.f001"
+    expected = "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2.0p25.f001"
     actual = get_grib_url(run=datetime(2022, 11, 12, 0), forecast=1)
     assert actual == expected
 
 
 def test_get_grib_idx_url() -> None:
     """Tests get_grib_idx_url returns a correctly formatted URL."""
-    expected = "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2b.0p25.f001.idx"
+    expected = "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2.0p25.f001.idx"
     actual = get_grib_idx_url(run=datetime(2022, 11, 12, 0), forecast=1)
     assert actual == expected
 
@@ -82,7 +82,7 @@ def test_get_grib_idx_url() -> None:
         ("PRMSL", "mean sea level", (0, 990416)),
         ("CLWMR", "1 hybrid level", (990417, 1068773)),
         ("ICMR", "surface", (1737623, None)),
-        ("BOOP", "surface", None),
+        ("BOOP", "surface", (None, None)),
     ],
 )
 @patch("openwx.grib.get_grib_index")
