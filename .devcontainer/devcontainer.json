@@ -9,7 +9,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pre-commit install && pip install -e .",
+	"postCreateCommand": "pip install -r requirements-dev.txt && pre-commit install && npm i -g gitmoji-cli && gitmoji --update && gitmoji --init && pip install -e .",
 
 	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode",
