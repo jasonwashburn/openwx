@@ -1,5 +1,10 @@
 """Tests for grib.py."""
-from openwx.grib import parse_grib_index
+from datetime import datetime
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from openwx.grib import get_grib_index, parse_grib_index
 
 
 def test_parse_grib_index():
@@ -24,3 +29,23 @@ def test_parse_grib_index():
         "SNMR": {"1 hybrid level": {"start": 1637623, "stop": 1737622}},
     }
     assert actual == expected
+
+
+@pytest.mark.asyncio
+@patch("openwx.grib.aiohttp.ClientSession.get")
+async def test_get_grib_index(mocked_get: AsyncMock) -> None:
+    """Tests that get_grib_index calls the correct URLs.
+
+    Args:
+        mocked_get (AsyncMock): A mocked ClientSession.get object.
+
+    Returns:
+        None
+    """
+    mocked_return = "some mocked text"
+    mocked_get.return_value.__aenter__.return_value.text.return_value = mocked_return
+    actual = await get_grib_index(run=datetime(2022, 11, 12, 0), forecast=1)
+    assert actual == mocked_return
+    mocked_get.assert_called_with(
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20221112/00/atmos/gfs.t00z.pgrb2b.0p25.f001.idx"
+    )
