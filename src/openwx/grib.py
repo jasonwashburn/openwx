@@ -10,6 +10,7 @@ import numpy as np
 import xarray as xr
 from xarray.core.types import InterpOptions
 
+from openwx.gfs import GFSParameters
 from openwx.models import Coords
 
 BASE_URL = "https://noaa-gfs-bdp-pds.s3.amazonaws.com"
@@ -121,18 +122,23 @@ async def get_start_stop_byte_nums(
     """
     index = await get_grib_index(run=run, forecast=forecast)
     parsed_index = parse_grib_index(index)
-    param_dict = parsed_index.get(parameter)
-    if param_dict is not None:
-        start_and_stop = param_dict.get(level)
-        if start_and_stop is not None:
-            start_byte = start_and_stop["start"]
-            stop_byte = start_and_stop["stop"]
-            return start_byte, stop_byte
+    if grib_index_key := GFSParameters.get_grib_index_key(parameter=parameter):
+
+        param_dict = parsed_index.get(grib_index_key)
+        if param_dict is not None:
+            start_and_stop = param_dict.get(level)
+            if start_and_stop is not None:
+                start_byte = start_and_stop["start"]
+                stop_byte = start_and_stop["stop"]
+                return start_byte, stop_byte
+            else:
+                logging.warning("Level: %s is not in grib index.", level)
+                return (None, None)
         else:
-            logging.warning("Level: %s is not in grib index.", level)
+            logging.warning("Param: %s is not in grib index.", grib_index_key)
             return (None, None)
     else:
-        logging.warning("Param: %s is not in grib index.", parameter)
+        logging.warning("Unable to find grib index key for param: %s", parameter)
         return (None, None)
 
 
@@ -203,17 +209,20 @@ async def get_parameter_value(
         with NamedTemporaryFile(mode="wb") as file:
             file.write(grib_message)
             ds = xr.open_dataset(file.name, engine="cfgrib")
-            value = (
-                ds["t2m"]  # TODO - Need to add translation from parameter to key
-                .interp(
-                    latitude=coords.latitude,
-                    longitude=coords.longitude,
-                    method=interp_method,
+            if grib_dataset_key := GFSParameters.get_grib_dataset_key(parameter):
+                value = (
+                    ds[
+                        grib_dataset_key
+                    ]  # TODO - Need to add translation from parameter to key
+                    .interp(
+                        latitude=coords.latitude,
+                        longitude=coords.longitude,
+                        method=interp_method,
+                    )
+                    .data
                 )
-                .data
-            )
 
-            return value
+                return value
 
 
 async def main():

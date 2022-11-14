@@ -84,6 +84,36 @@ class GFSParameters:
             if isinstance(attr, ParameterMetadata):
                 yield attr
 
+    @classmethod
+    def get_grib_index_key(cls, parameter: str) -> Optional[str]:
+        """Returns a grib index key for the requested parameter.
+
+        Args:
+            parameter (str): The requested parameter.
+
+        Returns:
+            Optional[str]: The GRIB index key for the requested param if it exists.
+        """
+        if parameter_metadata := cls.from_string(parameter):
+            return parameter_metadata.grib_index_key
+        else:
+            return None
+
+    @classmethod
+    def get_grib_dataset_key(cls, parameter: str) -> Optional[str]:
+        """Returns the grib dataset key for the requested parameter.
+
+        Args:
+            parameter (str): The requested parameter.
+
+        Returns:
+            Optional[str]: The xarray dataset key for the requested parameter.
+        """
+        if parameter_metadata := cls.from_string(parameter):
+            return parameter_metadata.grib_dataset_key
+        else:
+            return None
+
 
 def get_nc_dataset_key(parameter: str) -> Optional[str]:
     """Returns the model key used to retrieve the requested parameter.
