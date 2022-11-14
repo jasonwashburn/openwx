@@ -1,8 +1,7 @@
 """The module response for configuration and querying of GFS data."""
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum
-from typing import Iterable, Optional
+from typing import Generator, Iterable, Optional
 
 import numpy as np
 import xarray as xr
@@ -11,42 +10,122 @@ from xarray.core.types import InterpOptions
 from openwx.models import Coords
 
 
-class ParameterName(Enum):
-    """An enum for common weather parameters."""
-
-    TEMPERATURE = "temperature"
-    RELHUMIDITY = "relative_humidity"
-    GUST_SPEED = "wind_gust_speed"
-
-
 @dataclass
 class ParameterMetadata:
     """A dataclass for storing parameter metadata."""
 
-    model_key: str
+    short_name: str
+    nc_dataset_key: str
+    grib_index_key: str
+    grib_dataset_key: str
     model_unit: str
 
 
-PARAMETERS = {
-    ParameterName.TEMPERATURE: ParameterMetadata(model_key="tmp2m", model_unit="k"),
-    ParameterName.RELHUMIDITY: ParameterMetadata(model_key="rh2m", model_unit="%"),
-    ParameterName.GUST_SPEED: ParameterMetadata(model_key="gustsfc", model_unit="m/s"),
-}
+@dataclass
+class GFSParameters:
+    """An enum for common weather parameters."""
+
+    temperature_2m: ParameterMetadata = ParameterMetadata(
+        short_name="temperature_2m",
+        nc_dataset_key="tmp2m",
+        grib_index_key="TMP",
+        grib_dataset_key="t2m",
+        model_unit="k",
+    )
+    relative_humidty_2m: ParameterMetadata = ParameterMetadata(
+        short_name="relative_humidity_2m",
+        nc_dataset_key="rh2m",
+        grib_index_key="RH",
+        grib_dataset_key="r2",
+        model_unit="%",
+    )
+    gust_surface: ParameterMetadata = ParameterMetadata(
+        short_name="gust_surface",
+        nc_dataset_key="gustsfc",
+        grib_index_key="GUST",
+        grib_dataset_key="gust",
+        model_unit="m/s",
+    )
+
+    @classmethod
+    def from_string(cls, parameter_name: str) -> Optional[ParameterMetadata]:
+        """Returns the ParameterMetadata object for the requested parameter.
+
+        Args:
+            parameter_name (str): The short name of the desired parameter.
+
+        Returns:
+            Optional[ParameterMetadata]: The matching ParameterData object, otherwise None.
+        """
+        for parameter in cls.parameters():
+            if parameter_name == parameter.short_name:
+                return parameter
+        else:
+            return None
+
+    @classmethod
+    def parameter_names(cls) -> Generator[str, None, None]:
+        """Returns a generator of parameter short names.
+
+        Yields:
+            Generator[str, None, None]: A generator of parameter short names.
+        """
+        for parameter in cls.parameters():
+            yield parameter.short_name
+
+    @classmethod
+    def parameters(cls) -> Generator[ParameterMetadata, None, None]:
+        """Returns a Generator of parameter names.
+
+        Yields:
+            Generator[str, None, None]: A genrator of parameter names.
+        """
+        for attr in vars(cls).values():
+            if isinstance(attr, ParameterMetadata):
+                yield attr
+
+    @classmethod
+    def get_grib_index_key(cls, parameter: str) -> Optional[str]:
+        """Returns a grib index key for the requested parameter.
+
+        Args:
+            parameter (str): The requested parameter.
+
+        Returns:
+            Optional[str]: The GRIB index key for the requested param if it exists.
+        """
+        if parameter_metadata := cls.from_string(parameter):
+            return parameter_metadata.grib_index_key
+        else:
+            return None
+
+    @classmethod
+    def get_grib_dataset_key(cls, parameter: str) -> Optional[str]:
+        """Returns the grib dataset key for the requested parameter.
+
+        Args:
+            parameter (str): The requested parameter.
+
+        Returns:
+            Optional[str]: The xarray dataset key for the requested parameter.
+        """
+        if parameter_metadata := cls.from_string(parameter):
+            return parameter_metadata.grib_dataset_key
+        else:
+            return None
 
 
-def get_model_key(parameter: str) -> Optional[str]:
+def get_nc_dataset_key(parameter: str) -> Optional[str]:
     """Returns the model key used to retrieve the requested parameter.
 
     Args:
         parameter (ParameterName): The requested parameter.
 
     Returns:
-        Optional[str]: The model key for the requested parameter if the parameter exists, otherwise None
+        Optional[str]: The model key of the requested parameter, otherwise None
     """
-    parameter_enum = ParameterName(parameter)
-    parameter_metadata = PARAMETERS.get(parameter_enum)
-    if parameter_metadata is not None:
-        return parameter_metadata.model_key
+    if param_data := GFSParameters.from_string(parameter_name=parameter):
+        return param_data.nc_dataset_key
     else:
         return None
 
@@ -94,10 +173,13 @@ def get_parameter_value(
     """
     model_date = model_run.strftime("%Y%m%d")
     model_hour = model_run.strftime("%H")
-    gfs_link = f"http://nomads.ncep.noaa.gov:80/dods/gfs_0p25_1hr/gfs{model_date}/gfs_0p25_1hr_{model_hour}z"
+    base_url = "http://nomads.ncep.noaa.gov:80"
+    gfs_link = (
+        f"{base_url}/dods/gfs_0p25_1hr/gfs{model_date}/gfs_0p25_1hr_{model_hour}z"
+    )
     ds = xr.open_dataset(gfs_link, use_cftime=True)
 
-    param_key = get_model_key(parameter=parameter)
+    param_key = get_nc_dataset_key(parameter=parameter)
 
     value = (
         ds[param_key]

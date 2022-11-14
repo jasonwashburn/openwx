@@ -19,7 +19,6 @@ RUN conda install -y -c conda-forge xarray cfgrib dask netCDF4 bottleneck scipy
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
-COPY requirements.txt requirements-dev.txt /tmp/
+COPY requirements.txt /tmp/
 RUN conda init \
-    && pip install -r /tmp/requirements.txt \
-    && pip install -r /tmp/requirements-dev.txt
+    && pip install -r /tmp/requirements.txt
