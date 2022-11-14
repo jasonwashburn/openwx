@@ -18,4 +18,4 @@ repos:
     rev: 5.0.4
     hooks:
       - id: flake8
-        additional_dependencies: [flake8-docstrings, flake8-bandit, flake8]
+        additional_dependencies: [flake8-docstrings, flake8-bandit, flake8, pep8-naming, flake8-bugbear]
