@@ -16,12 +16,12 @@ from openwx.grib import (
 @pytest.fixture
 def mocked_idx_data():
     """Provides a mocked idx file fixture."""
-    return """1:0:d=2022111200:PRMSL:mean sea level:1 hour fcst:
-2:990417:d=2022111200:CLWMR:1 hybrid level:1 hour fcst:
-3:1068774:d=2022111200:ICMR:1 hybrid level:1 hour fcst:
-4:1392291:d=2022111200:RWMR:1 hybrid level:1 hour fcst:
-5:1637623:d=2022111200:SNMR:1 hybrid level:1 hour fcst:
-6:1737623:d=2022111200:ICMR:surface:1 hour fcst:
+    return """1:0:d=2022111200:TMP:2 m above ground:1 hour fcst:
+2:990417:d=2022111200:RH:2 m above ground:1 hour fcst:
+3:1068774:d=2022111200:GUST:2 m above ground:1 hour fcst:
+4:1392291:d=2022111200:RWMR:2 m above ground:1 hour fcst:
+5:1637623:d=2022111200:SNMR:2 m above ground:1 hour fcst:
+6:1737623:d=2022111200:GUST:surface:1 hour fcst:
 """
 
 
@@ -29,14 +29,14 @@ def test_parse_grib_index(mocked_idx_data):
     """Tests that parse_grib_index creates properly formatted dictionaries."""
     actual = parse_grib_index(index=mocked_idx_data)
     expected = {
-        "PRMSL": {"mean sea level": {"start": 0, "stop": 990416}},
-        "CLWMR": {"1 hybrid level": {"start": 990417, "stop": 1068773}},
-        "ICMR": {
-            "1 hybrid level": {"start": 1068774, "stop": 1392290},
+        "TMP": {"2 m above ground": {"start": 0, "stop": 990416}},
+        "RH": {"2 m above ground": {"start": 990417, "stop": 1068773}},
+        "GUST": {
+            "2 m above ground": {"start": 1068774, "stop": 1392290},
             "surface": {"start": 1737623, "stop": None},
         },
-        "RWMR": {"1 hybrid level": {"start": 1392291, "stop": 1637622}},
-        "SNMR": {"1 hybrid level": {"start": 1637623, "stop": 1737622}},
+        "RWMR": {"2 m above ground": {"start": 1392291, "stop": 1637622}},
+        "SNMR": {"2 m above ground": {"start": 1637623, "stop": 1737622}},
     }
     assert actual == expected
 
@@ -79,9 +79,9 @@ def test_get_grib_idx_url() -> None:
 @pytest.mark.parametrize(
     "parameter, level, expected_result",
     [
-        ("PRMSL", "mean sea level", (0, 990416)),
-        ("CLWMR", "1 hybrid level", (990417, 1068773)),
-        ("ICMR", "surface", (1737623, None)),
+        ("temperature_2m", "2 m above ground", (0, 990416)),
+        ("relative_humidity_2m", "2 m above ground", (990417, 1068773)),
+        ("gust_surface", "surface", (1737623, None)),
         ("BOOP", "surface", (None, None)),
     ],
 )
