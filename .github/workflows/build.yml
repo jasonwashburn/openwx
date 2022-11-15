@@ -6,6 +6,9 @@ jobs:
   build:
     name: Build and Test (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
     strategy:
       fail-fast: false
       matrix:
@@ -20,7 +23,6 @@ jobs:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
       - name: Install Conda Dependencies
-        shell: bash -el {0}
         run: |
           conda install -y -c conda-forge xarray cfgrib dask netCDF4 bottleneck scipy
       - name: Install Pip Dependencies
