@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class Forecast(BaseModel):
     """A pydantic model for storing individual forecasts."""
 
     valid_time: datetime
-    parameters: dict[str, float]
+    parameters: Dict[str, float]
 
 
 class ForecastResponseModel(BaseModel):
