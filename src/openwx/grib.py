@@ -3,7 +3,7 @@ import asyncio
 import logging
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 import aiohttp
 import numpy as np
@@ -64,14 +64,14 @@ async def get_grib_index(run: datetime, forecast: int) -> str:
     return resp_text
 
 
-def get_param_levels_from_index(index: str) -> dict[str, list[str]]:
+def get_param_levels_from_index(index: str) -> Dict[str, List[str]]:
     """Returns a dictionary of parameters and their available levels from idx data.
 
     Args:
         index (str): A string containing GRIB .idx data.
 
     Returns:
-        dict[str, list[str]]: Dictionary containing parameters with available levels.
+        Dict[str, List[str]]: Dictionary containing parameters with available levels.
     """
     parsed_index = parse_grib_index(index)
     result = {}
@@ -80,14 +80,14 @@ def get_param_levels_from_index(index: str) -> dict[str, list[str]]:
     return result
 
 
-def parse_grib_index(index: str) -> dict[str, dict[str, dict[str, Optional[int]]]]:
+def parse_grib_index(index: str) -> Dict[str, Dict[str, Dict[str, Optional[int]]]]:
     """Parses a grib index file into a usable dictionary.
 
     Args:
         index (str): The contents of the grib index file.
 
     Returns:
-        dict[str, dict[str, dict[str, Optional[int]]]]: A dictionary containing parameter, level,
+        Dict[str, Dict[str, Dict[str, Optional[int]]]]: A dictionary containing parameter, level,
             and start/stop byte addresses.
     """
     result = {}
@@ -108,7 +108,7 @@ def parse_grib_index(index: str) -> dict[str, dict[str, dict[str, Optional[int]]
 
 async def get_start_stop_byte_nums(
     run: datetime, forecast: int, parameter: str, level: str
-) -> tuple[Optional[int], Optional[int]]:
+) -> Tuple[Optional[int], Optional[int]]:
     """Gets the start and stop byte numbers for a given parameter and level.
 
     Args:
