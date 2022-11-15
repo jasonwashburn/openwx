@@ -3,7 +3,7 @@ import asyncio
 import logging
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from typing import List, Optional
 
 import aiohttp
 import numpy as np
@@ -64,14 +64,14 @@ async def get_grib_index(run: datetime, forecast: int) -> str:
     return resp_text
 
 
-def get_param_levels_from_index(index: str) -> dict[str, list[str]]:
+def get_param_levels_from_index(index: str) -> dict[str, List[str]]:
     """Returns a dictionary of parameters and their available levels from idx data.
 
     Args:
         index (str): A string containing GRIB .idx data.
 
     Returns:
-        dict[str, list[str]]: Dictionary containing parameters with available levels.
+        dict[str, List[str]]: Dictionary containing parameters with available levels.
     """
     parsed_index = parse_grib_index(index)
     result = {}
